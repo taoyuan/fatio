@@ -10,7 +10,7 @@ export interface Reader {
 }
 
 export interface Writer {
-  (i: number, data: Buffer): Promise<void>;
+  (i: number, data: Buffer): Promise<{bytesWrite: number, buffer: Buffer}>;
 }
 
 export interface Driver {
