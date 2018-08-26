@@ -2,7 +2,7 @@ import * as _path from "path";
 import * as _fs from "fs";
 import * as os from "os";
 import * as cp from "child_process";
-import {createFileSystem, Driver, FileSystem, fromCallback} from "..";
+import {createFileSystem, Driver, FileSystem, fromCallback} from "../src";
 import {createDriver} from "./image-driver";
 
 const FS_METHODS = [
