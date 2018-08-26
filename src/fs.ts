@@ -10,7 +10,7 @@ export interface Reader {
 }
 
 export interface Writer {
-  (i: number, data: Buffer): Promise<{bytesWrite: number, buffer: Buffer}>;
+  (i: number, data: Buffer): Promise<{ bytesWrite: number, buffer: Buffer }>;
 }
 
 export interface Driver {
@@ -35,70 +35,75 @@ export function createFileSystem(driver: Driver, opts?: FileSystemOptions) {
 
 export class FileHandler extends EventEmitter {
 
-  constructor(protected fs: any, public fd: number) {
+  constructor(protected fs: FileSystem, public fd: number) {
     super();
   }
 
   fstat(nested?: boolean): Promise<Stats> {
-    return fromCallback(cb => this.fs.fstat(this.fd, cb, toNested(nested)));
+    return this.fs.fstat(this.fd, nested);
   }
 
   futimes(atime: number | string | Date, mtime: number | string | Date, nested?: boolean) {
-    return fromCallback(cb => this.fs.futimes(this.fd, atime, mtime, cb, toNested(nested)));
+    return this.fs.futimes(this.fd, atime, mtime, nested);
   }
 
   fchmod(mode: number, nested?: boolean) {
-    return fromCallback(cb => this.fs.fchmod(this.fd, mode, cb, toNested(nested)));
+    return this.fs.fchmod(this.fd, mode, nested);
   }
 
   async read(buffer: Buffer, offset: number, length: number, position: number, nested?: boolean): Promise<{ bytesRead: number, buffer: Buffer }> {
-    const [bytesRead, data] = await fromCallback(cb => this.fs.read(this.fd, buffer, offset, length, position, cb, toNested(nested)), {multiArgs: true});
-    return {bytesRead, buffer: data};
+    return this.fs.read(this.fd, buffer, offset, length, position, nested);
   }
 
   async write(buffer: Buffer, offset?: number, length?: number, position?: number, nested?: boolean): Promise<{ bytesWrite: number, buffer: Buffer }> {
-    const [bytesWrite, data] = await fromCallback(cb => this.fs.write(this.fd, buffer, offset, length, position, cb, toNested(nested)), {multiArgs: true});
-    return {bytesWrite, buffer: data};
+    return this.fs.write(this.fd, buffer, offset, length, position, nested);
   }
 
   ftruncate(len?: number, nested?: boolean) {
-    return fromCallback(cb => this.fs.ftruncate(this.fd, len, cb, toNested(nested)));
+    return this.fs.ftruncate(this.fd, len, nested);
   }
 
   fsync() {
-    return fromCallback(cb => this.fs.fsync(this.fd, cb));
+    return this.fs.fsync(this.fd);
   }
 
   fchown(uid: number, gid: number): Promise<void> {
-    return fromCallback(cb => this.fs.fchown(this.fd, uid, gid, cb));
+    return this.fs.fchown(this.fd, uid, gid);
   }
 
   close() {
-    return fromCallback(cb => this.fs.close(this.fd, cb));
+    return this.fs.close(this.fd);
   }
 
 }
 
 export class FileSystem extends EventEmitter {
+  protected fs: any;
+  ready: Promise<void>;
 
   static create(driver: Driver, opts?: FileSystemOptions) {
-    return new FileSystem(fatfs.createFileSystem({
-      sectorSize: driver.sectorSize,
-      numSectors: driver.numSectors,
-      readSectors: (i, dest, cb) => asCallback(driver.readSectors(i, dest), cb),
-      writeSectors: driver.writeSectors ? (i, data, cb) => asCallback(driver.writeSectors && driver.writeSectors(i, data), cb) : null,
-    }, opts));
+    return new FileSystem(driver, opts);
   }
 
-  constructor(protected fs) {
+  constructor(driver: Driver, opts?: FileSystemOptions) {
     super();
 
+    this.ready = new Promise<void>(resolve => {
+      this.fs = fatfs.createFileSystem({
+        sectorSize: driver.sectorSize,
+        numSectors: driver.numSectors,
+        readSectors: (i, dest, cb) => asCallback(driver.readSectors(i, dest), cb),
+        writeSectors: driver.writeSectors ? (i, data, cb) => asCallback(driver.writeSectors && driver.writeSectors(i, data), cb) : null,
+      }, opts, () => resolve());
+    });
+
     this.fs.on('ready', () => this.emit('ready'));
-    this.fs.on('error', (err) => this.emit('ready', ...arguments));
+    this.fs.on('error', (err) => this.emit('error', err));
   }
 
   /**** ---- CORE API ---- ****/
   async open(path: string, flags: string, mode?: number, nested?: boolean): Promise<FileHandler> {
+    await this.ready;
     // const fd = await fromCallback(cb => this.fs.open(path, flags, mode, cb, toNested(nested)));
     const fd = await fromCallback(cb => {
       const args: any[] = [];
@@ -109,37 +114,45 @@ export class FileSystem extends EventEmitter {
     return new FileHandler(this.fs, fd);
   }
 
-  fstat(fd: number, nested?: boolean): Promise<Stats> {
+  async fstat(fd: number, nested?: boolean): Promise<Stats> {
+    await this.ready;
     return fromCallback(cb => this.fs.fstat(fd, cb, toNested(nested)));
   }
 
-  futimes(fd: number, atime: number | string | Date, mtime: number | string | Date, nested?: boolean) {
+  async futimes(fd: number, atime: number | string | Date, mtime: number | string | Date, nested?: boolean) {
+    await this.ready;
     return fromCallback(cb => this.fs.futimes(fd, atime, mtime, cb, toNested(nested)));
   }
 
-  fchmod(fd: number, mode: number, nested?: boolean) {
+  async fchmod(fd: number, mode: number, nested?: boolean) {
+    await this.ready;
     return fromCallback(cb => this.fs.fchmod(fd, mode, cb, toNested(nested)));
   }
 
   async read(fd: number, buffer: Buffer, offset: number, length: number, position: number, nested?: boolean): Promise<{ bytesRead: number, buffer: Buffer }> {
+    await this.ready;
     const [bytesRead, data] = await fromCallback(cb => this.fs.read(fd, buffer, offset, length, position, cb, toNested(nested)), {multiArgs: true});
     return {bytesRead, buffer: data};
   }
 
   async write(fd: number, buffer: Buffer, offset?: number, length?: number, position?: number, nested?: boolean): Promise<{ bytesWrite: number, buffer: Buffer }> {
+    await this.ready;
     const [bytesWrite, data] = await fromCallback(cb => this.fs.write(fd, buffer, offset, length, position, cb, toNested(nested)), {multiArgs: true});
     return {bytesWrite, buffer: data};
   }
 
-  ftruncate(fd: number, len?: number, nested?: boolean) {
+  async ftruncate(fd: number, len?: number, nested?: boolean) {
+    await this.ready;
     return fromCallback(cb => this.fs.ftruncate(fd, len, cb, toNested(nested)));
   }
 
-  fsync(fd: number, ) {
+  async fsync(fd: number) {
+    await this.ready;
     return fromCallback(cb => this.fs.fsync(fd, cb));
   }
 
-  close(fd: number, ) {
+  async close(fd: number) {
+    await this.ready;
     return fromCallback(cb => this.fs.close(fd, cb));
   }
 
@@ -168,21 +181,25 @@ export class FileSystem extends EventEmitter {
     return this.fs.createWriteStream(path, options);
   }
 
-  stat(path: PathLike): Promise<Stats> {
+  async stat(path: PathLike): Promise<Stats> {
+    await this.ready;
     return fromCallback(cb => this.fs.stat(path, cb));
   }
 
-  lstat(path: PathLike): Promise<Stats> {
+  async lstat(path: PathLike): Promise<Stats> {
+    await this.ready;
     return fromCallback(cb => this.fs.lstat(path, cb));
   }
 
-  exists(path: PathLike): Promise<boolean> {
+  async exists(path: PathLike): Promise<boolean> {
+    await this.ready;
     return new Promise<boolean>(resolve => {
       this.fs.exists(path, resolve);
     });
   }
 
-  readFile(path: PathLike | number, options?: { encoding?: string | null; flag?: string; } | null): Promise<Buffer | string> {
+  async readFile(path: PathLike | number, options?: { encoding?: string | null; flag?: string; } | null): Promise<Buffer | string> {
+    await this.ready;
     return fromCallback(cb => {
       const args: any[] = [];
       options && args.push(options);
@@ -191,7 +208,8 @@ export class FileSystem extends EventEmitter {
     });
   }
 
-  writeFile(path: PathLike | number, data: any, options?: { encoding?: string | null; mode?: number | string; flag?: string; } | string | null): Promise<void> {
+  async writeFile(path: PathLike | number, data: any, options?: { encoding?: string | null; mode?: number | string; flag?: string; } | string | null): Promise<void> {
+    await this.ready;
     return fromCallback(cb => {
       const args: any[] = [];
       options && args.push(options);
@@ -200,7 +218,8 @@ export class FileSystem extends EventEmitter {
     });
   }
 
-  appendFile(path: PathLike | number, data: any, options?: { encoding?: string | null; mode?: number | string; flag?: string; } | string | null): Promise<void> {
+  async appendFile(path: PathLike | number, data: any, options?: { encoding?: string | null; mode?: number | string; flag?: string; } | string | null): Promise<void> {
+    await this.ready;
     return fromCallback(cb => {
       const args: any[] = [];
       options && args.push(options);
@@ -209,15 +228,18 @@ export class FileSystem extends EventEmitter {
     });
   }
 
-  truncate(path: PathLike, len?: number): Promise<void> {
+  async truncate(path: PathLike, len?: number): Promise<void> {
+    await this.ready;
     return fromCallback(cb => this.fs.truncate(path, len, cb));
   }
 
-  readdir(path: PathLike): Promise<String[]> {
+  async readdir(path: PathLike): Promise<String[]> {
+    await this.ready;
     return fromCallback(cb => this.fs.readdir(path, cb));
   }
 
-  mkdir(path: PathLike, mode?: string | number): Promise<void> {
+  async mkdir(path: PathLike, mode?: string | number): Promise<void> {
+    await this.ready;
     return fromCallback(cb => {
       const args: any[] = [];
       mode && args.push(mode);
@@ -226,32 +248,39 @@ export class FileSystem extends EventEmitter {
     });
   }
 
-  utimes(path: PathLike, atime?: string | number | Date, mtime?: string | number | Date): Promise<void> {
+  async utimes(path: PathLike, atime?: string | number | Date, mtime?: string | number | Date): Promise<void> {
+    await this.ready;
     return fromCallback(cb => this.fs.utimes(path, atime, mtime, cb));
   }
 
-  chmod(path: PathLike, mode: string | number): Promise<void> {
+  async chmod(path: PathLike, mode: string | number): Promise<void> {
+    await this.ready;
     return fromCallback(cb => this.fs.chmod(path, mode, cb));
   }
 
-  lchmod(path: PathLike, mode: string | number): Promise<void> {
+  async lchmod(path: PathLike, mode: string | number): Promise<void> {
+    await this.ready;
     return fromCallback(cb => this.fs.lchmod(path, mode, cb));
   }
 
-  chown(path: PathLike, uid: number, gid: number): Promise<void> {
+  async chown(path: PathLike, uid: number, gid: number): Promise<void> {
+    await this.ready;
     return fromCallback(cb => this.fs.chown(path, uid, gid, cb));
   }
 
-  lchown(path: PathLike, uid: number, gid: number): Promise<void> {
+  async lchown(path: PathLike, uid: number, gid: number): Promise<void> {
+    await this.ready;
     return fromCallback(cb => this.fs.lchown(path, uid, gid, cb));
   }
 
   /* STUBS */
-  link(existingPath: PathLike, newPath: PathLike): Promise<void> {
+  async link(existingPath: PathLike, newPath: PathLike): Promise<void> {
+    await this.ready;
     return fromCallback(cb => this.fs.link(existingPath, newPath, cb));
   }
 
-  symlink(target: PathLike, path: PathLike, type?: string | null): Promise<void> {
+  async symlink(target: PathLike, path: PathLike, type?: string | null): Promise<void> {
+    await this.ready;
     return fromCallback(cb => {
       const args: any[] = [];
       type && args.push(type);
@@ -260,11 +289,13 @@ export class FileSystem extends EventEmitter {
     });
   }
 
-  readlink(path: PathLike): Promise<Buffer> {
+  async readlink(path: PathLike): Promise<Buffer> {
+    await this.ready;
     return fromCallback(cb => this.fs.readlink(path, cb));
   }
 
-  realpath(path: PathLike, cache?: boolean): Promise<string> {
+  async realpath(path: PathLike, cache?: boolean): Promise<string> {
+    await this.ready;
     return fromCallback(cb => {
       const args: any[] = [];
       cache && args.push(cache);
@@ -273,7 +304,8 @@ export class FileSystem extends EventEmitter {
     });
   }
 
-  fchown(fd: number, handler: FileHandler, uid: number, gid: number): Promise<void> {
+  async fchown(fd: number, uid: number, gid: number): Promise<void> {
+    await this.ready;
     return fromCallback(cb => this.fs.fchown(fd, uid, gid, cb));
   }
 }

@@ -45,7 +45,6 @@ const FS_METHODS = [
   }
 })();
 
-
 async function testWithImage(path) {
   await startTests(createDriver(path));
 }
@@ -64,13 +63,14 @@ export async function startTests(driver: Driver, waitTime?) {
   let isReady = false;
   fs.on('ready', function () {
     assert(isReady = true, "Driver is ready.");
-  }).on('error', function (e) {
+  });
+
+  fs.on('error', function (e) {
     assert(e, "If fs driver fires 'error' event, it should include error object.");
     assert(false, "…but driver should not error when initializing in our case.");
   });
-  setTimeout(function () {
-    assert(isReady, "Driver fired ready event in timely fashion.");
-  }, waitTime);
+
+  setTimeout(() => assert(isReady, "Driver fired ready event in timely fashion."), waitTime);
 
   const files = await fs.readdir("/");
   assert(isReady, "Method completed after 'ready' event.");
