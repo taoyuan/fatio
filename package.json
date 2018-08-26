@@ -1,12 +1,17 @@
 {
   "name": "nfatfs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "nfatfs",
   "license": "MIT",
   "repository": "",
   "author": "",
   "keywords": [
-    ""
+    "fat",
+    "fat32",
+    "fat16",
+    "fat12",
+    "fs",
+    "filesystem"
   ],
   "files": [
     "lib"
