@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import {Driver, fromCallback} from "..";
+import {Driver, fromCallback} from "../src";
 
 export function createDriver(path, opts?): Driver {
   opts = opts || {};

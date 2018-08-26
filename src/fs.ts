@@ -5,13 +5,20 @@ import {asCallback, fromCallback} from "./utils";
 import {PathLike, Stats, WriteStream} from "fs";
 import {Readable} from "stream";
 
+export interface Reader {
+  (i: number, dest: Buffer): Promise<Buffer>;
+}
+
+export interface Writer {
+  (i: number, data: Buffer): Promise<void>;
+}
+
 export interface Driver {
   sectorSize: number;
   numSectors: number;
-  readSectors: (i: number, dest: Buffer) => Promise<Buffer>;
-  writeSectors: (i: number, data: Buffer) => Promise<void> | undefined;
+  readSectors: Reader;
+  writeSectors: Writer | undefined;
 }
-
 
 export interface FileSystemOptions {
   ro?: boolean;
