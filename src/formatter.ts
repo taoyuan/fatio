@@ -69,6 +69,11 @@ export class Formatter {
   constructor(protected driver: Driver) {
   }
 
+  static async format(driver: Driver) {
+    const formatter = new Formatter(driver);
+    return formatter.format();
+  }
+
   buildBootSector(bootSectorLba: number, volSectors: number, name: string, isFat32: boolean) {
     let totalClusters: number;
     const {sector} = this.currentsector;
@@ -459,6 +464,5 @@ export class Formatter {
 }
 
 export async function format(driver: Driver) {
-  const formatter = new Formatter(driver)
-  return formatter.format();
+  return Formatter.format(driver);
 }
