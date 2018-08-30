@@ -1,24 +1,9 @@
 import {EventEmitter} from "events";
 import * as fatfs from "fatfs";
-import {asCallback, fromCallback} from "./utils";
-
 import {PathLike, Stats, WriteStream} from "fs";
 import {Readable} from "stream";
-
-export interface Reader {
-  (i: number, dest: Buffer): Promise<Buffer>;
-}
-
-export interface Writer {
-  (i: number, data: Buffer): Promise<{ bytesWrite: number, buffer: Buffer }>;
-}
-
-export interface Driver {
-  sectorSize: number;
-  numSectors: number;
-  readSectors: Reader;
-  writeSectors: Writer | undefined;
-}
+import {Driver} from "./defines";
+import {asCallback, fromCallback} from "./utils";
 
 export interface FileSystemOptions {
   ro?: boolean;
@@ -78,12 +63,8 @@ export class FileHandler extends EventEmitter {
 }
 
 export class FileSystem extends EventEmitter {
-  protected fs: any;
   ready: Promise<void>;
-
-  static create(driver: Driver, opts?: FileSystemOptions) {
-    return new FileSystem(driver, opts);
-  }
+  protected fs: any;
 
   constructor(driver: Driver, opts?: FileSystemOptions) {
     super();
@@ -99,6 +80,10 @@ export class FileSystem extends EventEmitter {
 
     this.fs.on('ready', () => this.emit('ready'));
     this.fs.on('error', (err) => this.emit('error', err));
+  }
+
+  static create(driver: Driver, opts?: FileSystemOptions) {
+    return new FileSystem(driver, opts);
   }
 
   /**** ---- CORE API ---- ****/

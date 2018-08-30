@@ -1,7 +1,7 @@
 {
-  "name": "nfatfs",
+  "name": "fatio",
   "version": "0.1.3",
-  "description": "nfatfs",
+  "description": "fatio",
   "license": "MIT",
   "repository": "",
   "author": "",
@@ -25,13 +25,18 @@
     "prepublish": "npm run build"
   },
   "dependencies": {
-    "fatfs": "^0.10.6"
+    "fatfs": "^0.10.6",
+    "pad": "^2.2.1"
   },
   "devDependencies": {
     "@types/chai": "^4.1.4",
     "@types/mocha": "^5.2.5",
     "@types/node": "^10.9.2",
+    "@types/ref": "0.0.28",
+    "@types/ref-array": "0.0.28",
+    "@types/ref-struct": "0.0.29",
     "chai": "^4.1.2",
+    "hex": "^0.1.0",
     "mocha": "^5.2.0",
     "rimraf": "^2.6.2",
     "ts-node": "^7.0.1",

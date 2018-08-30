@@ -2,8 +2,7 @@ import * as _path from "path";
 import * as _fs from "fs";
 import * as os from "os";
 import * as cp from "child_process";
-import {createFileSystem, Driver, FileSystem, fromCallback} from "../src";
-import {createDriver} from "./image-driver";
+import {Driver, FileSystem, ImageDriver, format, createFileSystem, fromCallback} from "../src";
 
 const FS_METHODS = [
   'mkdir', 'readdir',
@@ -30,8 +29,8 @@ const FS_METHODS = [
     await testWithImage(type);
   } else {
     const uniq = Math.random().toString(36).slice(2);
-    const img = _path.join(os.tmpdir(), 'nfatfs-demo-' + uniq + ".img");
-    const [_, err] = await fromCallback(cb => cp.exec(_path.resolve(__dirname, './make-sample.sh ' + JSON.stringify(img) + ' ' + JSON.stringify(type)), cb), {multiArgs: true});
+    const img = _path.join(os.tmpdir(), 'fatio-demo-' + uniq + ".img");
+    const [_, err] = await fromCallback(cb => cp.exec(_path.resolve(__dirname, './mkfs.sh ' + JSON.stringify(img) + ' ' + JSON.stringify(type)), cb), {multiArgs: true});
     console.warn(err);
     try {
       await testWithImage(img);
@@ -46,7 +45,10 @@ const FS_METHODS = [
 })();
 
 async function testWithImage(path) {
-  await startTests(createDriver(path));
+  const driver = ImageDriver.create(path);
+
+  await format(driver);
+  await startTests(driver);
 }
 
 export async function startTests(driver: Driver, waitTime?) {

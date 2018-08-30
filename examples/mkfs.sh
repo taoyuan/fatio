@@ -31,6 +31,3 @@ then
 fi
 
 dd if=/dev/zero of=$FILE bs=1048576 count=$SIZE
-DEV=`hdiutil attach $FILE -nomount`
-diskutil eraseVolume "$TYPE" "FATFS TEST" $DEV
-hdiutil detach $DEV

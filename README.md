@@ -1,8 +1,8 @@
-# nfatfs
+# fatio
 
 > A standalone FAT16/FAT32 implementation that takes in a block-access interface and exposes something quite similar to `require('fs')` (i.e. the node.js built-in [Filesystem API](http://nodejs.org/api/fs.html)).
 
-> `nfatfs` is based on [fatfs]()
+> `fatio` is based on [fatfs]()
 
 ## Installation
 
@@ -11,8 +11,8 @@
 ## Example
 
 ```js
-const nfatfs = require('nfatfs');
-const fs = nfatfs.createFileSystem(exampleDriver);      // see below
+const fatio = require('fatio');
+const fs = fatio.createFileSystem(exampleDriver);      // see below
 
 (async () => {
   const stats = await fs.stat("autoexec.bat");
@@ -82,7 +82,7 @@ Here's an example taken from code used to run this module's own tests:
 // NOTE: this assumes image at `path` has no partition table.
 //       If it did, you'd need to translate positions, natch…
 import * as fs from "fs";
-import {Driver, fromCallback} from "nfatfs";
+import {Driver, fromCallback} from "fatio";
 
 export function createDriver(path, opts?): Driver {
   opts = opts || {};
