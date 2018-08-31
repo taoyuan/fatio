@@ -1,4 +1,4 @@
-import {Driver} from "./defines";
+import {Volume} from "./defines";
 import pad = require("pad");
 
 export const FAT_SECTOR_SIZE = 512;
@@ -66,11 +66,11 @@ export class Formatter {
   fatBufferHead: FatBuffer | null;
   fatBuffers: FatBuffer[] = Array.from({length: FAT_BUFFERS}, () => new FatBuffer());
 
-  constructor(protected driver: Driver) {
+  constructor(protected volume: Volume) {
   }
 
-  static async format(driver: Driver) {
-    const formatter = new Formatter(driver);
+  static async format(volume: Volume) {
+    const formatter = new Formatter(volume);
     return formatter.format();
   }
 
@@ -261,7 +261,7 @@ export class Formatter {
 
   async createBootSector(bootSectorLba: number, volSectors: number, name: string, isFat32: boolean) {
     this.buildBootSector(bootSectorLba, volSectors, name, isFat32);
-    return this.driver.writeSectors(bootSectorLba, this.currentsector.sector.slice(0, FAT_SECTOR_SIZE));
+    return this.volume.writeSectors(bootSectorLba, this.currentsector.sector.slice(0, FAT_SECTOR_SIZE));
   }
 
   buildEraseFat(isFat32: boolean) {
@@ -286,13 +286,13 @@ export class Formatter {
 
     const {sector} = this.currentsector;
 
-    await this.driver.writeSectors(this.fatBeginLba, sector.slice(0, FAT_SECTOR_SIZE));
+    await this.volume.writeSectors(this.fatBeginLba, sector.slice(0, FAT_SECTOR_SIZE));
 
     // Zero remaining FAT sectors
     sector.fill(0, FAT_SECTOR_SIZE);
     const empty = sector.slice(0, FAT_SECTOR_SIZE);
     for (let i = 1; i < this.fatSectors * this.numOfFats; i++) {
-      await this.driver.writeSectors(this.fatBeginLba + i, empty);
+      await this.volume.writeSectors(this.fatBeginLba + i, empty);
     }
   }
 
@@ -304,7 +304,7 @@ export class Formatter {
     const empty = sector.slice(0, FAT_SECTOR_SIZE);
 
     for (let i = 0; i < count; i++) {
-      await this.driver.writeSectors(lba + i, empty);
+      await this.volume.writeSectors(lba + i, empty);
     }
   }
 
@@ -345,7 +345,7 @@ export class Formatter {
 
   async createFsinfoSector(secotrLba: number) {
     this.buildFsinfoSector(secotrLba);
-    await this.driver.writeSectors(secotrLba, this.currentsector.sector.slice(0, FAT_SECTOR_SIZE));
+    await this.volume.writeSectors(secotrLba, this.currentsector.sector.slice(0, FAT_SECTOR_SIZE));
   }
 
   async format16(name: string = '') {
@@ -356,7 +356,7 @@ export class Formatter {
     this.fatInit();
 
     // Make sure we have read + write functions
-    // TODO check driver is writable
+    // TODO check volume is writable
 
     // Volume is FAT16
     this.fatType = FatType.FAT16;
@@ -369,7 +369,7 @@ export class Formatter {
     // NOTE: We don't need an MBR, it is a waste of a good sector!
     this.lbaBegin = 0;
 
-    await this.createBootSector(this.lbaBegin, this.driver.numSectors, name, false);
+    await this.createBootSector(this.lbaBegin, this.volume.numSectors, name, false);
 
     // For FAT16 (which this may be), rootdir_first_cluster is actuall rootdir_first_sector
     this.rootdirFirstSector = this.reservedSectors + (this.numOfFats * this.fatSectors);
@@ -405,7 +405,7 @@ export class Formatter {
     // Sector 0: Boot sector
     // NOTE: We don't need an MBR, it is a waste of a good sector!
     this.lbaBegin = 0;
-    await this.createBootSector(this.lbaBegin, this.driver.numSectors, name, true);
+    await this.createBootSector(this.lbaBegin, this.volume.numSectors, name, true);
 
     // First FAT LBA address
     this.fatBeginLba = this.lbaBegin + this.reservedSectors;
@@ -425,7 +425,7 @@ export class Formatter {
 
   async format(name?: string) {
     // 2GB - 32K limit for safe behaviour for FAT16
-    if (this.driver.numSectors <= 4194304) {
+    if (this.volume.numSectors <= 4194304) {
       return this.format16(name);
     } else {
       return this.format32(name);
@@ -463,6 +463,6 @@ export class Formatter {
   }
 }
 
-export async function format(driver: Driver) {
-  return Formatter.format(driver);
+export async function format(volume: Volume) {
+  return Formatter.format(volume);
 }

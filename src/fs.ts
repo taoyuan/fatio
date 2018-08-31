@@ -2,7 +2,7 @@ import {EventEmitter} from "events";
 import * as fatfs from "fatfs";
 import {PathLike, Stats, WriteStream} from "fs";
 import {Readable} from "stream";
-import {Driver} from "./defines";
+import {Volume} from "./defines";
 import {asCallback, fromCallback} from "./utils";
 
 export interface FileSystemOptions {
@@ -14,8 +14,8 @@ export interface FileSystemOptions {
   gid?: number;
 }
 
-export function createFileSystem(driver: Driver, opts?: FileSystemOptions) {
-  return FileSystem.create(driver, opts);
+export function createFileSystem(volume: Volume, opts?: FileSystemOptions) {
+  return FileSystem.create(volume, opts);
 }
 
 export class FileHandler extends EventEmitter {
@@ -66,15 +66,15 @@ export class FileSystem extends EventEmitter {
   ready: Promise<void>;
   protected fs: any;
 
-  constructor(driver: Driver, opts?: FileSystemOptions) {
+  constructor(volume: Volume, opts?: FileSystemOptions) {
     super();
 
     this.ready = new Promise<void>(resolve => {
       this.fs = fatfs.createFileSystem({
-        sectorSize: driver.sectorSize,
-        numSectors: driver.numSectors,
-        readSectors: (i, dest, cb) => asCallback(driver.readSectors(i, dest), cb),
-        writeSectors: driver.writeSectors ? (i, data, cb) => asCallback(driver.writeSectors && driver.writeSectors(i, data), cb) : null,
+        sectorSize: volume.sectorSize,
+        numSectors: volume.numSectors,
+        readSectors: (i, dest, cb) => asCallback(volume.readSectors(i, dest), cb),
+        writeSectors: volume.writeSectors ? (i, data, cb) => asCallback(volume.writeSectors && volume.writeSectors(i, data), cb) : null,
       }, opts, () => resolve());
     });
 
@@ -82,8 +82,8 @@ export class FileSystem extends EventEmitter {
     this.fs.on('error', (err) => this.emit('error', err));
   }
 
-  static create(driver: Driver, opts?: FileSystemOptions) {
-    return new FileSystem(driver, opts);
+  static create(volume: Volume, opts?: FileSystemOptions) {
+    return new FileSystem(volume, opts);
   }
 
   /**** ---- CORE API ---- ****/

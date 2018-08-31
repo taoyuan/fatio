@@ -1,4 +1,4 @@
-export interface Driver {
+export interface Volume {
   sectorSize: number;
   numSectors: number;
   readSectors(i: number, dest: Buffer): Promise<Buffer>;

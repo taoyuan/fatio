@@ -1,8 +1,8 @@
 import * as fs from "fs";
-import {Driver} from "../defines";
+import {Volume} from "../defines";
 import {fromCallback} from "../utils";
 
-export class ImageDriver implements Driver {
+export class ImageVolume implements Volume {
   sectorSize: number = 512;
   numSectors: number;
 
@@ -10,7 +10,7 @@ export class ImageDriver implements Driver {
   protected readOnly: boolean;
 
   static create(path, opts?: {readOnly?: boolean}) {
-    return new ImageDriver(path, opts);
+    return new ImageVolume(path, opts);
   }
 
   constructor(file, opts?: {readOnly?: boolean}) {

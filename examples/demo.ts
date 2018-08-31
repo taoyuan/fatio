@@ -2,7 +2,7 @@ import * as _path from "path";
 import * as _fs from "fs";
 import * as os from "os";
 import * as cp from "child_process";
-import {Driver, FileSystem, ImageDriver, format, createFileSystem, fromCallback} from "../src";
+import {Volume, FileSystem, ImageVolume, format, createFileSystem, fromCallback} from "../src";
 
 const FS_METHODS = [
   'mkdir', 'readdir',
@@ -45,14 +45,14 @@ const FS_METHODS = [
 })();
 
 async function testWithImage(path) {
-  const driver = ImageDriver.create(path);
+  const volume = ImageVolume.create(path);
 
-  await format(driver);
-  await startTests(driver);
+  await format(volume);
+  await startTests(volume);
 }
 
-export async function startTests(driver: Driver, waitTime?) {
-  const fs = createFileSystem(driver, {umask: 0o0020, uid: 99, gid: 42});
+export async function startTests(volume: Volume, waitTime?) {
+  const fs = createFileSystem(volume, {umask: 0o0020, uid: 99, gid: 42});
   waitTime = waitTime || 0.5e3;
   FS_METHODS.forEach((method) => {
     assert(method in fs, "fs." + method + " has implementation.");
@@ -64,15 +64,15 @@ export async function startTests(driver: Driver, waitTime?) {
 
   let isReady = false;
   fs.on('ready', function () {
-    assert(isReady = true, "Driver is ready.");
+    assert(isReady = true, "Volume is ready.");
   });
 
   fs.on('error', function (e) {
-    assert(e, "If fs driver fires 'error' event, it should include error object.");
-    assert(false, "…but driver should not error when initializing in our case.");
+    assert(e, "If fs volume fires 'error' event, it should include error object.");
+    assert(false, "…but volume should not error when initializing in our case.");
   });
 
-  setTimeout(() => assert(isReady, "Driver fired ready event in timely fashion."), waitTime);
+  setTimeout(() => assert(isReady, "Volume fired ready event in timely fashion."), waitTime);
 
   const files = await fs.readdir("/");
   assert(isReady, "Method completed after 'ready' event.");

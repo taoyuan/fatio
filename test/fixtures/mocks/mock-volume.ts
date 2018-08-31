@@ -1,6 +1,6 @@
-import {Driver} from "../../../src";
+import {Volume} from "../../../src";
 
-export class MockDriver implements Driver {
+export class MockVolume implements Volume {
   data: Buffer;
 
   sectorSize: number = 512;
