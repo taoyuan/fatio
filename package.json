@@ -26,20 +26,20 @@
   },
   "dependencies": {
     "fatfs": "^0.10.6",
-    "pad": "^2.2.1"
+    "pad": "^3.2.0"
   },
   "devDependencies": {
     "@types/chai": "^4.1.4",
     "@types/mocha": "^5.2.5",
-    "@types/node": "^10.9.4",
+    "@types/node": "^12.7.4",
     "@types/ref": "0.0.28",
     "@types/ref-array": "0.0.28",
     "@types/ref-struct": "0.0.29",
     "chai": "^4.1.2",
     "hex": "^0.1.0",
-    "mocha": "^5.2.0",
-    "rimraf": "^2.6.2",
-    "ts-node": "^7.0.1",
+    "mocha": "^6.2.0",
+    "rimraf": "^3.0.0",
+    "ts-node": "^8.3.0",
     "typescript": "^3.0.3"
   },
   "engines": {
