@@ -1,5 +1,7 @@
 # fatio
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/taoyuan/fatio.svg)](https://greenkeeper.io/)
+
 > A standalone FAT16/FAT32 implementation that takes in a block-access interface and exposes something quite similar to `require('fs')` (i.e. the node.js built-in [Filesystem API](http://nodejs.org/api/fs.html)).
 
 > `fatio` is based on [fatfs]()
